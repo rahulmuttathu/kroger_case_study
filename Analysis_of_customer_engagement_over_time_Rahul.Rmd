@@ -1,0 +1,141 @@
+---
+title: "Analysis of Customer Engagement Over Time - Project Proposal"
+author: "Rahul Muttathu Sasikumar"
+date: "November 8, 2018"
+output: html_document
+---
+
+## Introduction
+
+The analysis of customer transactions for a period can provide useful insights on how customer engagement changes over time. It can be used to answer important questions like:
+
+*	What categories are growing or shrinking with changing customer engagement?
+*	How does the customer engagement vary across different departments/commodities over time?
+*	which each group is interested in which categories/commodities/products?
+*	what is the general trends for magnitude of spend for each category/commodity/product among different income groups
+*	How does the general trend of spend vary among different household composition and household sizes and what products are they more interested in?  
+
+In general, these analyses can be useful for the management to get insights on which product or commodity are doing well in terms of sales and number of units sold and also can be used for selective marketing of products among each demographic group
+
+## Packages Required
+
+To analyze this data, we will use the following R packages:
+
+```{r, message=FALSE}
+library(ggplot2)   # visualizing data
+library(dplyr)     # transforming (joining, summarizing, etc.) data
+library(DT)  
+library(tidyverse)# for printing nice HTML output tables
+```
+
+## Data Preparation
+
+Prior to assessing how customer engagement over time by analyzing the household transactions, data is imported, vaidated and cleaned. The source data consists of three csv files which consists of the Household data, products data and transactions data. The households data includes the data corresponding to 5000 households with demographic details such as Age range, Marital status, Income range, Homeowner description, Household compensation, Size and Number of children. The Products data has the product information such as Product number, Department, Commodity, Private/National brand and Natural/Organic flag. The transactions data has the transactions details corresponding to each household for the products they purchased for a period of two years.
+
+The missing values are recorded mainly in three different formats. For certain variables it is marked as 'Unknown', certain others it is 'null','NOT AVAILABLE' and some are marked as 'NA' as well.
+
+### Importing the data
+
+The data is obtained from three different csv file corresponding to Households data, Products data and Transaction data respectively.
+
+```{r}
+setwd("C:/Users/rahul/Desktop/Complete-Journey-Reduced")
+households <- read.csv("data/5000_households.csv", strip.white = T) 
+
+products <- read.csv("data/5000_products.csv", strip.white = T)
+
+transactions <- read.csv("data/5000_transactions.csv", strip.white = T)
+
+#using strip.white to remove the trailing spaces in the data
+
+
+```
+
+### Creating Tidy Data
+
+Once the data has been imported from the source files, the next step is to validate the data and clean the data into a tidy format.
+
+For each data set, the columns which have incomlete/unidentifiable names are renamed with identifiable names. Since the missing values are recorded differently for each variable, we need to change those values to 'NA' in order to make them uniform. The code below takes care of this process. The variables are first converted into characters for this purpose and then after the data is cleaned, they are changed to appropriate data types.
+
+Finally, the cleaned data sets are merged to a single final dataset with all the required variables.
+
+```{r}
+# create tidy households data
+
+households[] <- lapply(households, as.character)
+
+# null values and all the data points where the data is not available are assigned a uniform 
+# value NA
+
+households[households[,] == "null"] <- "NA"
+households[households[,] == "NOT AVAILABLE"] <- "NA"
+households[households[,] == "Not Available"] <- "NA"
+households[households[,] == "Unknown"] <- "NA"
+
+households[] <- lapply(households, factor)
+households$HSHD_NUM <- as.integer(households$HSHD_NUM)
+colnames(households)[2] <- "LOYALTY_FLAG"
+colnames(households)[4] <- "MARITAL_STATUS"
+colnames(households)[6] <- "HOMEOWNER_DESCRIPTION"
+
+# create tidy products data
+
+colnames(products)[5] <- "NATURAL/ORGANIC_FLAG"
+colnames(products)[4] <- "BRAND_TYPE"
+
+# create tidy transactions data
+
+colnames(transactions)[3] <- "PURCHASE_DATE"
+colnames(transactions)[7] <- "STORE_REGION"
+
+# converting purchase date to a date column
+
+transactions$PURCHASE_DATE <- as.character(transactions$PURCHASE_DATE)
+transactions$PURCHASE_DATE <- as.Date(transactions$PURCHASE_DATE, format = "%d-%b-%y")
+
+# create tidy merged data frame
+
+hh_trans <- merge(households, transactions, by = "HSHD_NUM")
+final_dataset <- merge(hh_trans, products, by = "PRODUCT_NUM")
+```
+
+### Final Data set
+
+The final cleaned dataset consists of 21 variables in total as shown in the data table below. The variables which we are mainly concerned about are WEEK_NUM (varies from 1-104), SPEND(spend corresponding to each transaction), UNITS (number of units for each transaction). In addition to this, we are interested in factors such as DEPARTMENT, COMMODITY, AGE_RANGE, MARITAL_STATUS, INCOME_RANGE, HSHD_COMPOSITION, HH_SIZE and CHILDREN.
+
+```{r}
+data_sample <- head(final_dataset, n = 50)
+
+datatable(data_sample)
+```
+
+
+## Proposed Exploratory Data Analysis
+
+The main goal of this analysis is to find out how customer engagement changes over time. In order to get an overall picture of this, we may need to perform the following analyses.
+
+### 1.Product wise analysis
+
+*	How does the customer engagement vary across different departments over time? – Spend could be plotted against week number for each of the departments (Food, Non- Food etc) to get more insights about this.
+*	How does this engagement vary across the commodities within each food item? Which are the top commodities in terms of sales(spend) and number of units sold? – A bar chart can be plotted with commodities and spends as x and y axes to find out this.
+*	Further, the data can be drilled down and this analysis can be extended to each particular product type.
+
+In general, the product analysis can be useful for the management to get insights on which product or commodity are doing well in terms of sales and number of units sold.
+
+### 2.Demographic analysis
+
+*	Analysis can be done on each age group to figure out, what each group is interested in which categories/commodities/products - Bar charts can be plotted with commodity as category axis and spend as value axis for each age group. From this, it would be easier to detect what commodities each group spends on the most.
+*	Similar analysis can be performed on different income ranges and general trends for magnitude of spend for each category/commodity/product can be obtained. 
+*	How does the general trend of spend vary among different household composition and household sizes and what products are they more interested in? - A scatter plot can be plotted for spend against household size for each commodity to analyse if household size has an impact on the sales of that particular commodity.
+
+All the above information can be used for selective marketing of products among each demographic group
+
+
+
+
+
+
+
+
+
+
